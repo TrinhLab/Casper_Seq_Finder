@@ -14,11 +14,11 @@
 
 using namespace std;
 
-int main()
+int main(int argc, char* argv[])
 {
 	clock_t tStart = clock();
 	//vector<string> argv = { "Executable","spCas9","NGG","TRUE","FALSE","4","16","0","gal","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA Files/gallus_gallus.fna", "gallus gallus", "notes_go_here" };
-	vector<string> argv = { "Executable","spCas9","NGG", "TRUE","FALSE","TRUE","4","16","0","testing","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA Files/bacillus_coagulans.fna", "bacillus coagulans", "notes_go_here" };
+	//vector<string> argv = { "Executable","spCas9","NGG", "TRUE","FALSE","TRUE","4","16","0","testing","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA Files/bacillus_coagulans.fna", "bacillus coagulans", "notes_go_here" };
 
 	//variables
 	CrisprGroup genome;

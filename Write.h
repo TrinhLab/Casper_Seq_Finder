@@ -12,6 +12,7 @@
 #include <boost/iostreams/filter/gzip.hpp>
 #include "Score.h"
 #include "sqlite3.h"
+#include <math.h>
 
 using namespace std;
 

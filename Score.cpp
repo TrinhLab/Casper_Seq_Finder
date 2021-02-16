@@ -5,21 +5,31 @@ using namespace std;
 void Scoring::fillScoringAlgorithm(string &file)
 {
 	//Establish file stream
-	ifstream* stream = new ifstream;
-	stream->open(file.c_str(), ifstream::in);
+	//ifstream* stream = new ifstream;
+	//stream->open(file.c_str(), ifstream::in);
+
+	ifstream stream;
+	stream.open(file.c_str());
 
 	//Get to the CRISPRSCAN data section of the file:
 	std::string myline = "myline";
-	while (myline != "CRISPRSCAN_DATA")
+	while (getline(stream, myline))
 	{
-		getline(*stream, myline);
+		if(myline.find("RISPRSCAN_DATA") != string::npos)
+		{
+			break;
+		}
+		//getline(stream, myline);
 	}
 
 	//Load Information
 	string nts;
-	getline(*stream, nts);
-	while (nts[0] != '-')
+	while (getline(stream, nts))
 	{
+		if(nts.find("---") != string::npos)
+		{
+			break;
+		}
 		iden nid;
 		vector<string> mytoke = Msplit(nts, '\t');
 		nid.nt1 = mytoke[0][0];
@@ -27,9 +37,8 @@ void Scoring::fillScoringAlgorithm(string &file)
 		nid.position = stoi(mytoke[1]);
 		nid.odds_score = stod(mytoke[2]);
 		Idens.push_back(nid);
-		getline(*stream, nts);
 	}
-	stream->close();
+	stream.close();
 };
 
 double Scoring::calcScore(string &s)

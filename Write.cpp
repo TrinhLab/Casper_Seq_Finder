@@ -21,9 +21,10 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 	boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
 	outbuf.push(boost::iostreams::gzip_compressor());
 	outbuf.push(outputfile);
+	
 	//Convert streambuf to ostream
 	ostream out(&outbuf);
-
+	
 	//output first details - org name, kstats, misc
 	genome = "GENOME: " + org_name;
 	kstat = "KARYSTATS: ";
@@ -32,7 +33,7 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 		kstat += to_string(kstats[i]) + ",";
 	}
 	misc = "MISCELLANEOUS: " + notes;
-
+	
 	out << genome << endl;
 	out << kstat << endl;
 	out << misc << endl;

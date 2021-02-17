@@ -12,6 +12,7 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 	//variables
 	Scoring score(score_file);
 	string comp, seq, genome, kstat, misc;
+	long pos = 0;
 	int i = 0;
 	vector<long> temp;
 	int j = 0;
@@ -21,10 +22,9 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 	boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
 	outbuf.push(boost::iostreams::gzip_compressor());
 	outbuf.push(outputfile);
-	
 	//Convert streambuf to ostream
 	ostream out(&outbuf);
-	
+
 	//output first details - org name, kstats, misc
 	genome = "GENOME: " + org_name;
 	kstat = "KARYSTATS: ";
@@ -33,7 +33,7 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 		kstat += to_string(kstats[i]) + ",";
 	}
 	misc = "MISCELLANEOUS: " + notes;
-	
+
 	out << genome << endl;
 	out << kstat << endl;
 	out << misc << endl;
@@ -67,7 +67,8 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 			}
 			else
 			{
-				seq = comp.substr(-temp[i] - seq_length - 1, seq_length + pam_length);
+				pos = comp.size() + (temp[i] - 1);
+				seq = comp.substr(pos - seq_length, seq_length + pam_length);
 				out << temp[i] << ',' << seq.substr(0, seq_length) << ',' << seq.substr(seq_length, pam_length) << ',' << score.calcScore(seq) << endl;
 			}
 		}
@@ -97,6 +98,7 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 	int running_cnt = 0;
 	int curr_chrom = 0;
 	int cnt = 0;
+	long pos = 0;
 	vector<string> comps(sequences.size());
 
 	//open and setup DB
@@ -134,11 +136,13 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 		}
 		if (seed_locs[repeats[i]] > 0)
 		{
+			
 			seq = sequences[curr_chrom].substr(seed_locs[repeats[i]] - seq_length, seq_length + pam_length);
 		}
 		else
 		{
-			seq = comps[curr_chrom].substr(-seed_locs[repeats[i]] - seq_length - 1, seq_length + pam_length);
+			pos = comps[curr_chrom].size() + (seed_locs[repeats[i]] - 1);
+			seq = comps[curr_chrom].substr(pos - seq_length, seq_length + pam_length);
 
 		}
 		cs = to_string(curr_chrom + 1);
@@ -147,6 +151,8 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 		pams = seq.substr(seq_length, pam_length);
 		scores = to_string(int(score.calcScore(seq)));
 		cnt = 1;
+		seed = seq.substr(five_length, seed_length);
+
 		while (true)
 		{
 			if (compressed_seeds[repeats[i]] != compressed_seeds[repeats[i + 1]] || i >= repeats.size())
@@ -155,7 +161,9 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 				break;
 			}
 			cnt++;
+			
 			locs += "," + to_string(seed_locs[repeats[i + 1]]);
+			
 			running_cnt = seed_cnts[0];
 			for (int j = 0; j < seed_cnts.size(); j++)
 			{
@@ -172,7 +180,8 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 			}
 			else
 			{
-				seq = comps[curr_chrom].substr(-seed_locs[repeats[i + 1]] - seq_length - 1, seq_length + pam_length);
+				pos = comps[curr_chrom].size() + (seed_locs[repeats[i + 1]] - 1);
+				seq = comps[curr_chrom].substr(pos - seq_length, seq_length + pam_length);
 			}
 			cs += "," + to_string(curr_chrom + 1);
 			threes += "," + seq.substr(five_length + seed_length, three_length);
@@ -202,6 +211,7 @@ void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, v
 	int i = 0;
 	vector<long> temp;
 	int j = 0;
+	long pos = 0;
 	int running_cnt = 0;
 	ofstream outputfile;
 	outputfile.open(filename, ios_base::out | ios_base::binary);
@@ -254,7 +264,8 @@ void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, v
 			}
 			else
 			{
-				seq = comp.substr(-temp[i] - 1, seq_length + pam_length);
+				pos = comp.size() + (temp[i] - 1);
+				seq = comp.substr(pos, seq_length + pam_length);
 				out << temp[i] << ',' << seq.substr(pam_length, seq_length) << ',' << seq.substr(0, pam_length) << ',' << score.calcScore(seq) << endl;
 			}
 		}
@@ -283,6 +294,7 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 	int i = 0;
 	int running_cnt = 0;
 	int curr_chrom = 0;
+	long pos = 0;
 	int cnt = 0;
 	vector<string> comps(sequences.size());
 
@@ -325,7 +337,8 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 		}
 		else
 		{
-			seq = comps[curr_chrom].substr(-seed_locs[repeats[i]] - 1, seq_length + pam_length);
+			pos = comps[curr_chrom].size() + (seed_locs[repeats[i]] - 1);
+			seq = comps[curr_chrom].substr(pos, seq_length + pam_length);
 
 		}
 		cs = to_string(curr_chrom + 1);
@@ -359,7 +372,8 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 			}
 			else
 			{
-				seq = comps[curr_chrom].substr((-seed_locs[repeats[i + 1]]) - 1, seq_length + pam_length);
+				pos = comps[curr_chrom].size() + (seed_locs[repeats[i + 1]] - 1);
+				seq = comps[curr_chrom].substr(pos, seq_length + pam_length);
 			}
 			cs += "," + to_string(curr_chrom + 1);
 			threes += "," + seq.substr(pam_length + five_length + seed_length, three_length);
@@ -373,6 +387,7 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 		seed = "'" + seq.substr(pam_length + five_length, seed_length) + "'";
 		sql += seed + ",'" + cs + "','" + locs + "','" + threes + "','" + fives + "','" + pams + "','" + scores + "'," + to_string(cnt);
 		sql += ");";
+		
 		rc = sqlite3_exec(db, sql.c_str(), NULL, 0, 0);
 	}
 

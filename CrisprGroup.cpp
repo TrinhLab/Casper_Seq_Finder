@@ -50,6 +50,7 @@ void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<
 			for (int j = 0; j < running_threads.size(); j++)
 			{
 				running_threads[j].join();
+				cout << "Chromosome " << j + 1 << " complete." << endl;
 			}
 		}
 		else //if using single-threading, go one at a time
@@ -57,6 +58,7 @@ void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<
 			for (int k = 0; k < threads; k++)
 			{
 				find_seeds_dir(locs[k], cnts[k], comp_seeds[k], sequences[k], pam, k, pam_length, seq_length, five_length, seed_length);
+				cout << "Chromosome " << k + 1 << " complete." << endl;
 			}
 		}
 	}
@@ -72,6 +74,7 @@ void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<
 			for (int j = 0; j < running_threads.size(); j++)
 			{
 				running_threads[j].join();
+				cout << "Chromosome " << j + 1 << " complete." << endl;
 			}
 		}
 		else
@@ -79,6 +82,7 @@ void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<
 			for (int k = 0; k < threads; k++)
 			{
 				find_seeds(locs[k], cnts[k], comp_seeds[k], sequences[k], pam, k, seq_length, five_length, seed_length);
+				cout << "Chromosome " << k + 1 << " complete." << endl;
 			}
 		}
 	}
@@ -104,7 +108,7 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 	//check for 5 or more N's in seq before saving it
 	smatch m;
 	string seq, seed;
-	unsigned long pos = 0;
+	long pos = 0;
 	sregex_iterator begin, end;
 	int cnt = 0;
 	int size = seq_pointer.size();
@@ -118,8 +122,10 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 			seq = seq_pointer.substr(pos - seq_length, seq_length);
 			seed = seq.substr(five_length, seed_length);
 			cnt = 0;
+			
 			for (int i = 0; i < seq.size(); i++)
 			{
+				
 				if (seq[i] == 'N')
 				{
 					cnt++;
@@ -132,27 +138,33 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 				{
 					break;
 				}
+				
 			}
+			
 			if (cnt < 5)
 			{
 				comp_seeds.push_back(compressSeq(seed));
 				l.push_back(pos);
 				c++;
 			}
+
 		}
 	}
 	
 	reverseComplement(seq_pointer);
+	//cout << seq_pointer << endl;
 	begin = sregex_iterator(seq_pointer.begin(), seq_pointer.end(), pam);
 	for (sregex_iterator it = begin; it != end; it++)
 	{
 		m = *it;
 		pos = m.position();
+		
 		if (size - 10 > pos && pos > 30)
 		{
 			seq = seq_pointer.substr(pos - seq_length, seq_length);
 			seed = seq.substr(five_length, seed_length);
 			cnt = 0;
+			
 			for (int i = 0; i < seq.size(); i++)
 			{
 				if (seq[i] == 'N')
@@ -171,19 +183,18 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 			
 			if (cnt < 5)
 			{
-				comp_seeds.push_back(compressSeq(seed));
 				pos = size - (pos + 1);
 				pos *= -1;
-				pos += size;
-				pos *= -1;
+				comp_seeds.push_back(compressSeq(seed));
 				l.push_back(pos);
 				c++;
 			}
+
 		}
 	}
 	reverseComplement(seq_pointer);
 
-	cout << "Chromosome " << chrom << " complete." << endl;
+	//cout << "Chromosome " << chrom << " complete." << endl;
 }
 
 //find seeds - directionality
@@ -264,11 +275,9 @@ void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> 
 
 				if (cnt < 5)
 				{
-					comp_seeds.push_back(compressSeq(seed));
 					pos = size - (pos + 1);
 					pos *= -1;
-					pos += size;
-					pos *= -1;
+					comp_seeds.push_back(compressSeq(seed));
 					l.push_back(pos);
 					c++;
 				}
@@ -276,7 +285,7 @@ void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> 
 		}
 	}
 	reverseComplement(seq_pointer);
-	cout << "Chromosome " << chrom << " complete." << endl;
+	//cout << "Chromosome " << chrom << " complete." << endl;
 }
 
 
@@ -295,7 +304,7 @@ void CrisprGroup::process_targets(vector<int> &uniques, vector<int> &repeats, ve
 
 	//now we know that if compressed seeds are sorted, a repeated seed will be next to its repeats in the vector
 	//loop through compressed seeds, find out if that index leads to a unique or a repeated seed
-	if (compressed_seeds[indices[0]] == compressed_seeds[indices[1]])
+	if (compressed_seeds[indices[0]] != compressed_seeds[indices[1]])
 	{
 		uniques.push_back(indices[0]);
 	}
@@ -303,7 +312,7 @@ void CrisprGroup::process_targets(vector<int> &uniques, vector<int> &repeats, ve
 	{
 		repeats.push_back(indices[0]);
 	}
-	for (i = 1; i < indices.size() - 1; i++)
+	for (i = 1; i < indices.size() - 2; i++)
 	{
 		if (compressed_seeds[indices[i - 1]] != compressed_seeds[indices[i]] && compressed_seeds[indices[i]] != compressed_seeds[indices[i + 1]])
 		{
@@ -328,6 +337,9 @@ void CrisprGroup::process_targets(vector<int> &uniques, vector<int> &repeats, ve
 	indices.clear();
 	indices.shrink_to_fit();
 
+	
+
+	//cout << repeats.size() << endl;
 	//sort uniques - sorts with respect to chromosome, and location
 	sort(uniques.begin(), uniques.end());
 }

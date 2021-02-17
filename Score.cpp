@@ -5,9 +5,6 @@ using namespace std;
 void Scoring::fillScoringAlgorithm(string &file)
 {
 	//Establish file stream
-	//ifstream* stream = new ifstream;
-	//stream->open(file.c_str(), ifstream::in);
-
 	ifstream stream;
 	stream.open(file.c_str());
 
@@ -15,18 +12,17 @@ void Scoring::fillScoringAlgorithm(string &file)
 	std::string myline = "myline";
 	while (getline(stream, myline))
 	{
-		if(myline.find("RISPRSCAN_DATA") != string::npos)
+		if (myline.find("RISPRSCAN_DATA") != string::npos)
 		{
 			break;
 		}
-		//getline(stream, myline);
 	}
 
 	//Load Information
 	string nts;
 	while (getline(stream, nts))
 	{
-		if(nts.find("---") != string::npos)
+		if (nts.find("---") != string::npos)
 		{
 			break;
 		}

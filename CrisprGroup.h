@@ -14,6 +14,7 @@
 #include <thread>
 #include <numeric>
 #include <math.h>
+
 using namespace std;
 
 class CrisprGroup

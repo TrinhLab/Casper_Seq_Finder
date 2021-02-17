@@ -14,11 +14,13 @@
 
 using namespace std;
 
-int main(int argc, char* argv[])
+//int main(int argc, char* argv[])
+int main()
 {
 	clock_t tStart = clock();
 	//vector<string> argv = { "Executable","spCas9","NGG","TRUE","FALSE","4","16","0","gal","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA Files/gallus_gallus.fna", "gallus gallus", "notes_go_here" };
-	//vector<string> argv = { "Executable","spCas9","NGG", "TRUE","FALSE","TRUE","4","16","0","testing","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA Files/bacillus_coagulans.fna", "bacillus coagulans", "notes_go_here" };
+	//vector<string> argv = { "Executable","spCas9","NGG", "FALSE","FALSE","TRUE","4","16","0","baccoa","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/baccoa.fna", "bacillus coagulans", "notes_go_here" };
+	//vector<string> argv = { "Executable","spCas9","NGG", "TRUE","FALSE","TRUE","4","16","0","baccoa","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA FIles/bacillus_coagulans.fna", "bacillus coagulans", "notes_go_here" };
 
 	//variables
 	CrisprGroup genome;
@@ -115,6 +117,7 @@ int main(int argc, char* argv[])
 	
 	cout << "Finished." << endl;
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart) / CLOCKS_PER_SEC);
+	system("pause");
 	return 0;
 
 }

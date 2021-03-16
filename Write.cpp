@@ -45,8 +45,17 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 		
 		//get locations pertaining to pams found in the current chromosome
 		running_cnt += seed_cnts[curr_chrom];
-		while (uniques[j] < running_cnt && j < uniques.size())
+
+		while (true)
 		{
+			if (j >= uniques.size())
+			{
+				break;
+			}
+			if (uniques[j] >= running_cnt)
+			{
+				break;
+			}
 			temp.push_back(seed_locs[uniques[j]]);
 			j++;
 		}
@@ -118,7 +127,6 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 		comps[i] = reverseComplement(sequences[i]);
 	}
 	i = 0;
-	
 	//loop through repeats indices (they should be grouped together, so loop until compressed seed value isnt equal anymore)
 	while (i < repeats.size())
 	{
@@ -134,6 +142,7 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 			}
 			running_cnt += seed_cnts[j + 1];
 		}
+
 		if (seed_locs[repeats[i]] > 0)
 		{
 			
@@ -155,7 +164,12 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 
 		while (true)
 		{
-			if (compressed_seeds[repeats[i]] != compressed_seeds[repeats[i + 1]] || i >= repeats.size())
+			if (i >= repeats.size() - 1)
+			{
+				i++;
+				break;
+			}
+			if (compressed_seeds[repeats[i]] != compressed_seeds[repeats[i + 1]])
 			{
 				i++;
 				break;

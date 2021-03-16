@@ -117,7 +117,7 @@ int main()
 	
 	cout << "Finished." << endl;
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart) / CLOCKS_PER_SEC);
-	system("pause");
+	//system("pause");
 	return 0;
 
 }

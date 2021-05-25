@@ -29,6 +29,7 @@ void Read::read_file(string &filename, vector<string> &sequences, vector<string>
 		}
 	}
 	transform(seq.begin(), seq.end(), seq.begin(), ::toupper);
+	//cout << seq << endl;
 	sequences.push_back(seq);
 	fin.clear();
 	fin.close();

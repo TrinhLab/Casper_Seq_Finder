@@ -18,8 +18,8 @@ using namespace std;
 class Scoring
 {
 public:
-	Scoring(string &file) { fillScoringAlgorithm(file); };
-	void fillScoringAlgorithm(string &file);
+	Scoring(string &file, string &on_score_data) { fillScoringAlgorithm(file, on_score_data); };
+	void fillScoringAlgorithm(string &file, string &on_score_data);
 	vector<string> Msplit(const string &text, char sep);
 	void scanScore();
 	double calcScore(string &s);

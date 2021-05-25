@@ -7,10 +7,10 @@ bool abs_cmp(long i1, long i2)
 	return (abs(i1) < abs(i2));
 }
 
-void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length)
+void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length, string &on_target_data)
 {
 	//variables
-	Scoring score(score_file);
+	Scoring score(score_file, on_target_data);
 	string comp, seq, genome, kstat, misc;
 	long pos = 0;
 	int i = 0;
@@ -95,10 +95,10 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 	uniques.shrink_to_fit();
 }
 
-void Write::write_repeats(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length)
+void Write::write_repeats(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length, string &on_target_data)
 {
 	//variables
-	Scoring score(score_file);
+	Scoring score(score_file, on_target_data);
 	sqlite3 *db;
 	char *zErrMsg = 0;
 	string sc, sql, seq, locs, seed, scores, fives, threes, pams, cs;
@@ -217,10 +217,10 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 	sqlite3_close(db);
 }
 
-void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length)
+void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length, string &on_target_data)
 {
 	//variables
-	Scoring score(score_file);
+	Scoring score(score_file, on_target_data);
 	string comp, seq, genome, kstat, misc;
 	int i = 0;
 	vector<long> temp;
@@ -297,10 +297,10 @@ void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, v
 	uniques.shrink_to_fit();
 }
 
-void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length)
+void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length, string &on_target_data)
 {
 	//variables
-	Scoring score(score_file);
+	Scoring score(score_file, on_target_data);
 	sqlite3 *db;
 	char *zErrMsg = 0;
 	string sc, sql, seq, locs, seed, scores, fives, threes, pams, cs;

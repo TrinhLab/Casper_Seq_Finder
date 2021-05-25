@@ -2,7 +2,7 @@
 
 using namespace std;
 
-void Scoring::fillScoringAlgorithm(string &file)
+void Scoring::fillScoringAlgorithm(string &file, string &on_score_data)
 {
 	//Establish file stream
 	ifstream stream;
@@ -12,7 +12,7 @@ void Scoring::fillScoringAlgorithm(string &file)
 	std::string myline = "myline";
 	while (getline(stream, myline))
 	{
-		if (myline.find("RISPRSCAN_DATA") != string::npos)
+		if (myline.find(on_score_data) != string::npos)
 		{
 			break;
 		}

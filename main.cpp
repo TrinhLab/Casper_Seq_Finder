@@ -15,19 +15,19 @@
 using namespace std;
 
 //int main(int argc, char* argv[])
-int main()
+int main(int argc, char* argv[])
 {
 	clock_t tStart = clock();
 	//vector<string> argv = { "Executable","spCas9","NGG","TRUE","FALSE","4","16","0","gal","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA Files/gallus_gallus.fna", "gallus gallus", "notes_go_here" };
-	//vector<string> argv = { "Executable","spCas9","NGG", "FALSE","FALSE","TRUE","4","16","0","baccoa","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/baccoa.fna", "bacillus coagulans", "notes_go_here" };
-	//vector<string> argv = { "Executable","spCas9","NGG", "TRUE","FALSE","TRUE","4","16","0","baccoa","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA FIles/bacillus_coagulans.fna", "bacillus coagulans", "notes_go_here" };
+	//vector<string> argv = { "Executable","spCas9","NGG", "FALSE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
+	//vector<string> argv = { "Executable","spCas9","NGG", "FALSE","FALSE","TRUE","4","16","0","test","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA FIles/human.fna", "bacillus coagulans", "notes_go_here" };
 
 	//variables
 	CrisprGroup genome;
 	Read read;
 	pameval PamEval;
 	Write write;
-	string endo, pam, org_code, output_path, score_file, input_file, org_name, notes, cspr_filename, db_filename, pam_regex;
+	string endo, pam, org_code, output_path, score_file, input_file, org_name, notes, cspr_filename, db_filename, pam_regex, on_target_data;
 	int five_length, seed_length, three_length, seq_length, pam_length, total = 0;
 	bool directionality, reps;
 	bool strand = true;
@@ -75,6 +75,7 @@ int main()
 	input_file = string(argv[12]);
 	org_name = string(argv[13]);
 	notes = string(argv[14]);
+	on_target_data = string(argv[15]);
 	seq_length = five_length + seed_length + three_length;
 	pam_length = pam.size();
 	total = seq_length + pam_length;
@@ -83,12 +84,12 @@ int main()
 	//filenames
 	cspr_filename = output_path + org_code + "_" + endo + ".cspr";
 	db_filename = output_path + org_code + "_" + endo + "_repeats.db";
-	
+
 	//read input file
 	cout << "Reading input file." << endl;
 	read.read_file(input_file, sequences, chroms, kstats);
 	seed_cnts.resize(sequences.size());
-	
+
 	cout << "Number of Chromosomes/Scaffolds: " << sequences.size() << endl;
 
 	//find pams
@@ -103,18 +104,18 @@ int main()
 	if (directionality)
 	{
 		cout << "Writing out uniques." << endl;
-		write.write_uniques_dir(uniques, sequences, seed_locs, seed_cnts, kstats, org_name, cspr_filename, score_file, chroms, notes, pam_length, seq_length);
+		write.write_uniques_dir(uniques, sequences, seed_locs, seed_cnts, kstats, org_name, cspr_filename, score_file, chroms, notes, pam_length, seq_length, on_target_data);
 		cout << "Writing out repeats." << endl;
-		write.write_repeats_dir(db_filename, repeats, sequences, seed_locs, compressed_seeds, seed_cnts, score_file, five_length, three_length, seed_length, pam_length, seq_length);
+		write.write_repeats_dir(db_filename, repeats, sequences, seed_locs, compressed_seeds, seed_cnts, score_file, five_length, three_length, seed_length, pam_length, seq_length, on_target_data);
 	}
 	else
 	{
 		cout << "Writing out uniques." << endl;
-		write.write_uniques(uniques, sequences, seed_locs, seed_cnts, kstats, org_name, cspr_filename, score_file, chroms, notes, pam_length, seq_length);
+		write.write_uniques(uniques, sequences, seed_locs, seed_cnts, kstats, org_name, cspr_filename, score_file, chroms, notes, pam_length, seq_length, on_target_data);
 		cout << "Writing out repeats." << endl;
-		write.write_repeats(db_filename, repeats, sequences, seed_locs, compressed_seeds, seed_cnts, score_file, five_length, three_length, seed_length, pam_length, seq_length);
+		write.write_repeats(db_filename, repeats, sequences, seed_locs, compressed_seeds, seed_cnts, score_file, five_length, three_length, seed_length, pam_length, seq_length, on_target_data);
 	}
-	
+
 	cout << "Finished." << endl;
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart) / CLOCKS_PER_SEC);
 	//system("pause");

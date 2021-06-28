@@ -274,13 +274,13 @@ void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, v
 			{
 				seq = sequences[curr_chrom].substr(temp[i], seq_length + pam_length);
 
-				out << temp[i] << ',' << seq.substr(pam_length, seq_length) << ',' << seq.substr(0, pam_length) << ',' << score.calcScore(seq) << endl;
+				out << temp[i] + pam_length << ',' << seq.substr(pam_length, seq_length) << ',' << seq.substr(0, pam_length) << ',' << score.calcScore(seq) << endl;
 			}
 			else
 			{
 				pos = comp.size() + (temp[i] - 1);
 				seq = comp.substr(pos, seq_length + pam_length);
-				out << temp[i] << ',' << seq.substr(pam_length, seq_length) << ',' << seq.substr(0, pam_length) << ',' << score.calcScore(seq) << endl;
+				out << temp[i] + pam_length << ',' << seq.substr(pam_length, seq_length) << ',' << seq.substr(0, pam_length) << ',' << score.calcScore(seq) << endl;
 			}
 		}
 
@@ -334,7 +334,7 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 	while (i < repeats.size())
 	{
 		sql = "INSERT INTO repeats ('seed', 'chromosome', 'location', 'three', 'five', 'pam', 'score', 'count') VALUES (";
-		locs = to_string(seed_locs[repeats[i]]);
+		locs = to_string(seed_locs[repeats[i]] + pam_length);
 		running_cnt = seed_cnts[0];
 		for (int j = 0; j < seed_cnts.size(); j++)
 		{
@@ -369,7 +369,7 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 				break;
 			}
 			cnt++;
-			locs += "," + to_string(seed_locs[repeats[i + 1]]);
+			locs += "," + to_string(seed_locs[repeats[i + 1]] + pam_length);
 			running_cnt = seed_cnts[0];
 			for (int j = 0; j < seed_cnts.size(); j++)
 			{

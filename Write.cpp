@@ -76,7 +76,7 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 			}
 			else
 			{
-				pos = comp.size() + (temp[i] - 1);
+				pos = comp.size() + temp[i] + 1;
 				seq = comp.substr(pos - seq_length, seq_length + pam_length);
 				out << temp[i] << ',' << seq.substr(0, seq_length) << ',' << seq.substr(seq_length, pam_length) << ',' << score.calcScore(seq) << endl;
 			}
@@ -150,7 +150,7 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 		}
 		else
 		{
-			pos = comps[curr_chrom].size() + (seed_locs[repeats[i]] - 1);
+			pos = comps[curr_chrom].size() + seed_locs[repeats[i]] + 1;
 			seq = comps[curr_chrom].substr(pos - seq_length, seq_length + pam_length);
 
 		}
@@ -194,7 +194,7 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 			}
 			else
 			{
-				pos = comps[curr_chrom].size() + (seed_locs[repeats[i + 1]] - 1);
+				pos = comps[curr_chrom].size() + seed_locs[repeats[i + 1]] + 1;
 				seq = comps[curr_chrom].substr(pos - seq_length, seq_length + pam_length);
 			}
 			cs += "," + to_string(curr_chrom + 1);
@@ -272,13 +272,13 @@ void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, v
 		{
 			if (temp[i] > 0)
 			{
-				seq = sequences[curr_chrom].substr(temp[i], seq_length + pam_length);
+				seq = sequences[curr_chrom].substr(temp[i] - 1, seq_length + pam_length);
 
 				out << temp[i] + pam_length << ',' << seq.substr(pam_length, seq_length) << ',' << seq.substr(0, pam_length) << ',' << score.calcScore(seq) << endl;
 			}
 			else
 			{
-				pos = comp.size() + (temp[i] - 1);
+				pos = comp.size() + temp[i];
 				seq = comp.substr(pos, seq_length + pam_length);
 				out << temp[i] + pam_length << ',' << seq.substr(pam_length, seq_length) << ',' << seq.substr(0, pam_length) << ',' << score.calcScore(seq) << endl;
 			}
@@ -347,11 +347,11 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 		}
 		if (seed_locs[repeats[i]] > 0)
 		{
-			seq = sequences[curr_chrom].substr(seed_locs[repeats[i]], seq_length + pam_length);
+			seq = sequences[curr_chrom].substr(seed_locs[repeats[i]] - 1, seq_length + pam_length);
 		}
 		else
 		{
-			pos = comps[curr_chrom].size() + (seed_locs[repeats[i]] - 1);
+			pos = comps[curr_chrom].size() + seed_locs[repeats[i]];
 			seq = comps[curr_chrom].substr(pos, seq_length + pam_length);
 
 		}
@@ -382,11 +382,11 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 			}
 			if (seed_locs[repeats[i + 1]] > 0)
 			{
-				seq = sequences[curr_chrom].substr(seed_locs[repeats[i + 1]], seq_length + pam_length);
+				seq = sequences[curr_chrom].substr(seed_locs[repeats[i + 1]] - 1, seq_length + pam_length);
 			}
 			else
 			{
-				pos = comps[curr_chrom].size() + (seed_locs[repeats[i + 1]] - 1);
+				pos = comps[curr_chrom].size() + seed_locs[repeats[i + 1]];
 				seq = comps[curr_chrom].substr(pos, seq_length + pam_length);
 			}
 			cs += "," + to_string(curr_chrom + 1);

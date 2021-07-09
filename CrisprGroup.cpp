@@ -152,13 +152,11 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 	}
 	
 	reverseComplement(seq_pointer);
-	//cout << seq_pointer << endl;
 	begin = sregex_iterator(seq_pointer.begin(), seq_pointer.end(), pam);
 	for (sregex_iterator it = begin; it != end; it++)
 	{
 		m = *it;
 		pos = m.position();
-		
 		if (size - 10 > pos && pos > 30)
 		{
 			seq = seq_pointer.substr(pos - seq_length, seq_length);
@@ -183,8 +181,9 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 			
 			if (cnt < 5)
 			{
-				pos = size - (pos + 1);
+				pos = size - pos + 1;
 				pos *= -1;
+
 				comp_seeds.push_back(compressSeq(seed));
 				l.push_back(pos);
 				c++;
@@ -237,7 +236,7 @@ void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> 
 				if (cnt < 5)
 				{
 					comp_seeds.push_back(compressSeq(seed));
-					l.push_back(pos);
+					l.push_back(pos + 1);
 					c++;
 				}
 			}
@@ -275,7 +274,7 @@ void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> 
 
 				if (cnt < 5)
 				{
-					pos = size - (pos + 1);
+					pos = size - pos;
 					pos *= -1;
 					comp_seeds.push_back(compressSeq(seed));
 					l.push_back(pos);

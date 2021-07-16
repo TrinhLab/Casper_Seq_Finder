@@ -14,15 +14,14 @@
 
 using namespace std;
 
-//int main(int argc, char* argv[])
-int main()
+int main(int argc, char* argv[])
+//int main()
 {
 	clock_t tStart = clock();
-	vector<string> argv = { "Executable", "spCas9", "NGG", "TRUE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
+	//vector<string> argv = { "Executable", "saCas9", "NNGRRT", "TRUE","FALSE","TRUE","4","16","0","bsu","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/bacillus_subtilis_168.fna", "bsu", "notes_go_here", "DATA:CRISPRSCAN" };
 	//vector<string> argv = { "Executable", "asCas12", "TTTV", "TRUE","TRUE","TRUE","0","16","8","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
-
+	//vector<string> argv = { "Executable", "saCas9", "NNGRRT", "TRUE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
 	//vector<string> argv = { "Executable", "spCas9", "NGG", "TRUE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
-	//vector<string> argv = { "Executable","spCas9","NGG", "FALSE","FALSE","TRUE","4","16","0","test","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA FIles/human.fna", "bacillus coagulans", "notes_go_here" };
 
 	//variables
 	CrisprGroup genome;
@@ -121,7 +120,7 @@ int main()
 
 	cout << "Finished." << endl;
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart) / CLOCKS_PER_SEC);
-	system("pause");
+	//system("pause");
 	return 0;
 
 }

@@ -122,7 +122,7 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 			seq = seq_pointer.substr(pos - seq_length, seq_length);
 			seed = seq.substr(five_length, seed_length);
 			cnt = 0;
-			
+
 			for (int i = 0; i < seq.size(); i++)
 			{
 				

@@ -21,12 +21,16 @@ int main(int argc, char* argv[])
 	//vector<string> argv = { "Executable", "saCas9", "NNGRRT", "TRUE","FALSE","TRUE","4","16","0","bsu","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/bacillus_subtilis_168.fna", "bsu", "notes_go_here", "DATA:CRISPRSCAN" };
 	//vector<string> argv = { "Executable", "asCas12", "TTTV", "TRUE","TRUE","TRUE","0","16","8","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
 	//vector<string> argv = { "Executable", "saCas9", "NNGRRT", "TRUE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
-	//vector<string> argv = { "Executable", "spCas9", "NGG", "TRUE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
+	
+	//vector<string> argv = { "Executable", "spCas9", "NGG", "TRUE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/CASPER_alg_tool/staphylococcus_aureus.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
+	//vector<string> argv = { "Executable", "spCas9", "NGG", "TRUE","FALSE","TRUE","4","16","0","gallus","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/gallus_gallus.fna", "gallus", "notes_go_here", "DATA:CRISPRSCAN" };
+	//vector<string> argv = { "Executable", "saCas9", "NNGRRT", "TRUE","FALSE","TRUE","4","16","0","gallus","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/gallus_gallus", "gallus", "notes_go_here", "DATA:CRISPRSCAN" };
+
+	//vector<string> argv = { "Executable", "asCas12", "TTTV", "TRUE","TRUE","TRUE","0","20","4","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/CASPER_alg_tool/staphylococcus_aureus.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
 
 	//variables
 	CrisprGroup genome;
 	Read read;
-	pameval PamEval;
 	Write write;
 	string endo, pam, org_code, output_path, score_file, input_file, org_name, notes, cspr_filename, db_filename, pam_regex, on_target_data;
 	int five_length, seed_length, three_length, seq_length, pam_length, total = 0;
@@ -81,7 +85,10 @@ int main(int argc, char* argv[])
 	seq_length = five_length + seed_length + three_length;
 	pam_length = pam.size();
 	total = seq_length + pam_length;
-	pam_regex = PamEval.regexPAM(pam);
+
+	//generate list of valid_pams
+	pameval PamEval(pam);
+	PamEval.generatePamsWrapper();
 
 	//filenames
 	cspr_filename = output_path + org_code + "_" + endo + ".cspr";
@@ -96,7 +103,7 @@ int main(int argc, char* argv[])
 
 	//find pams
 	cout << "Finding Targets." << endl;
-	genome.findPAMs(directionality, mt, sequences, compressed_seeds, seed_locs, seed_cnts, strand, pam_regex, pam_length, seq_length, five_length, seed_length);
+	genome.findPAMs(directionality, mt, sequences, compressed_seeds, seed_locs, seed_cnts, strand, PamEval, pam_length, seq_length, five_length, seed_length);
 
 	//process targets
 	cout << "Processing Targets." << endl;
@@ -106,21 +113,20 @@ int main(int argc, char* argv[])
 	if (directionality)
 	{
 		cout << "Writing out uniques." << endl;
-		write.write_uniques_dir(uniques, sequences, seed_locs, seed_cnts, kstats, org_name, cspr_filename, score_file, chroms, notes, pam_length, seq_length, on_target_data);
+		write.write_uniques_dir(uniques, sequences, seed_locs, seed_cnts, kstats, org_name, cspr_filename, score_file, chroms, notes, pam_length, seq_length, on_target_data, endo, directionality, pam, PamEval);
 		cout << "Writing out repeats." << endl;
-		write.write_repeats_dir(db_filename, repeats, sequences, seed_locs, compressed_seeds, seed_cnts, score_file, five_length, three_length, seed_length, pam_length, seq_length, on_target_data);
+		write.write_repeats_dir(db_filename, repeats, sequences, seed_locs, compressed_seeds, seed_cnts, score_file, five_length, three_length, seed_length, pam_length, seq_length, on_target_data, endo, directionality, pam, PamEval);
 	}
 	else
 	{
 		cout << "Writing out uniques." << endl;
-		write.write_uniques(uniques, sequences, seed_locs, seed_cnts, kstats, org_name, cspr_filename, score_file, chroms, notes, pam_length, seq_length, on_target_data);
+		write.write_uniques(uniques, sequences, seed_locs, seed_cnts, kstats, org_name, cspr_filename, score_file, chroms, notes, pam_length, seq_length, on_target_data, endo, directionality, pam, PamEval);
 		cout << "Writing out repeats." << endl;
-		write.write_repeats(db_filename, repeats, sequences, seed_locs, compressed_seeds, seed_cnts, score_file, five_length, three_length, seed_length, pam_length, seq_length, on_target_data);
+		write.write_repeats(db_filename, repeats, sequences, seed_locs, compressed_seeds, seed_cnts, score_file, five_length, three_length, seed_length, pam_length, seq_length, on_target_data, endo, directionality, pam, PamEval);
 	}
 
 	cout << "Finished." << endl;
 	printf("Time taken: %.2fs\n", (double)(clock() - tStart) / CLOCKS_PER_SEC);
 	//system("pause");
 	return 0;
-
 }

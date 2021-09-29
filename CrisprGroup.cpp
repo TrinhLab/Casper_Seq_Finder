@@ -27,11 +27,8 @@ CrisprGroup::~CrisprGroup()
  * makes a new instance of gRNA in which the sequence is placed into to fill the data of the object.
  */
 
-void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<unsigned long> &compressed_seeds, vector<long> &seed_locs, vector<int> &cnts, bool &strand, string &pam_regex, int &pam_length, int &seq_length, int &five_length, int &seed_length)
+void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<unsigned long> &compressed_seeds, vector<long> &seed_locs, vector<int> &cnts, bool &strand, pameval &PamEval, int &pam_length, int &seq_length, int &five_length, int &seed_length)
 {
-	regex pam(pam_regex);
-	cmatch m;
-	cregex_iterator begin, end;
 	int threads = sequences.size();
 	vector<thread> running_threads(threads);
 	vector<vector<long> > locs(sequences.size());
@@ -44,7 +41,7 @@ void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<
 		{
 			for (int k = 0; k < threads; k++)
 			{
-				thread t([this, &locs, &cnts, &comp_seeds, &sequences, &pam, k, &pam_length, &seq_length, &five_length, &seed_length]() {find_seeds_dir(locs[k], cnts[k], comp_seeds[k], sequences[k], pam, k, pam_length, seq_length, five_length, seed_length); });
+				thread t([this, &locs, &cnts, &comp_seeds, &sequences, &PamEval, k, &pam_length, &seq_length, &five_length, &seed_length]() {find_seeds_dir(locs[k], cnts[k], comp_seeds[k], sequences[k], PamEval, k, pam_length, seq_length, five_length, seed_length); });
 				running_threads[k] = move(t);
 			}
 			for (int j = 0; j < running_threads.size(); j++)
@@ -57,7 +54,7 @@ void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<
 		{
 			for (int k = 0; k < threads; k++)
 			{
-				find_seeds_dir(locs[k], cnts[k], comp_seeds[k], sequences[k], pam, k, pam_length, seq_length, five_length, seed_length);
+				find_seeds_dir(locs[k], cnts[k], comp_seeds[k], sequences[k], PamEval, k, pam_length, seq_length, five_length, seed_length);
 				cout << "Chromosome " << k + 1 << " complete." << endl;
 			}
 		}
@@ -68,7 +65,7 @@ void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<
 		{
 			for (int k = 0; k < threads; k++)
 			{
-				thread t([this, &locs, &cnts, &comp_seeds, &sequences, &pam, k, &seq_length, &five_length, &seed_length]() {find_seeds(locs[k], cnts[k], comp_seeds[k], sequences[k], pam, k, seq_length, five_length, seed_length); });
+				thread t([this, &locs, &cnts, &comp_seeds, &sequences, &PamEval, k, &seq_length, &five_length, &seed_length]() {find_seeds(locs[k], cnts[k], comp_seeds[k], sequences[k], PamEval, k, seq_length, five_length, seed_length); });
 				running_threads[k] = move(t);
 			}
 			for (int j = 0; j < running_threads.size(); j++)
@@ -81,7 +78,7 @@ void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<
 		{
 			for (int k = 0; k < threads; k++)
 			{
-				find_seeds(locs[k], cnts[k], comp_seeds[k], sequences[k], pam, k, seq_length, five_length, seed_length);
+				find_seeds(locs[k], cnts[k], comp_seeds[k], sequences[k], PamEval, k, seq_length, five_length, seed_length);
 				cout << "Chromosome " << k + 1 << " complete." << endl;
 			}
 		}
@@ -103,119 +100,119 @@ void CrisprGroup::findPAMs(bool dir, bool mt, vector<string> &sequences, vector<
 }
 
 //find seeds, non-directionality
-void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &comp_seeds, string &seq_pointer, regex &pam, int chrom, int &seq_length, int &five_length, int &seed_length)
+void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &comp_seeds, string &seq_pointer, pameval &PamEval, int chrom, int &seq_length, int &five_length, int &seed_length)
 {
 	//check for 5 or more N's in seq before saving it
-	smatch m;
 	string seq, seed;
 	long pos = 0;
-	sregex_iterator begin, end;
+	long loc = 0;
 	int cnt = 0;
 	int size = seq_pointer.size();
-	begin = sregex_iterator(seq_pointer.begin(), seq_pointer.end(), pam);
-	for (sregex_iterator it = begin; it != end; it++)
+	string curr_pam = "";
+	//loop through each valid pam
+	for (int j = 0; j < PamEval.pam_list.size(); j++)
 	{
-		m = *it;
-		pos = m.position();
-		if (size - 10 > pos && pos > 30)
+		curr_pam = PamEval.pam_list[j];
+		pos = 0;
+		while (pos != string::npos)
 		{
-			seq = seq_pointer.substr(pos - seq_length, seq_length);
-			seed = seq.substr(five_length, seed_length);
-			cnt = 0;
-
-			for (int i = 0; i < seq.size(); i++)
+			if (pos > seq_length && pos < seq_pointer.size() - seq_length)
 			{
-				
-				if (seq[i] == 'N')
-				{
-					cnt++;
-				}
-				else
-				{
-					cnt = 0;
-				}
-				if (cnt >= 5)
-				{
-					break;
-				}
-				
-			}
-			
-			if (cnt < 5)
-			{
-				comp_seeds.push_back(compressSeq(seed));
-				l.push_back(pos);
-				c++;
-			}
+				seq = seq_pointer.substr(pos - seq_length, seq_length);
+				seed = seq.substr(five_length, seed_length);
+				cnt = 0;
 
+				for (int i = 0; i < seq.size(); i++)
+				{
+					if (seq[i] == 'N')
+					{
+						cnt++;
+					}
+					else
+					{
+						cnt = 0;
+					}
+					if (cnt >= 5)
+					{
+						break;
+					}
+				}
+				if (cnt < 5)
+				{
+					comp_seeds.push_back(compressSeq(seed));
+					l.push_back(pos);
+					c++;
+				}
+			}
+			pos = seq_pointer.find(curr_pam, pos + 1);
 		}
 	}
 	
 	reverseComplement(seq_pointer);
-	begin = sregex_iterator(seq_pointer.begin(), seq_pointer.end(), pam);
-	for (sregex_iterator it = begin; it != end; it++)
+	
+	for (int j = 0; j < PamEval.pam_list.size(); j++)
 	{
-		m = *it;
-		pos = m.position();
-		if (size - 10 > pos && pos > 30)
+		pos = 0;
+		curr_pam = PamEval.pam_list[j];
+		while (pos != string::npos)
 		{
-			seq = seq_pointer.substr(pos - seq_length, seq_length);
-			seed = seq.substr(five_length, seed_length);
-			cnt = 0;
-			
-			for (int i = 0; i < seq.size(); i++)
+			if (pos > seq_length && pos < seq_pointer.size() - seq_length)
 			{
-				if (seq[i] == 'N')
+				seq = seq_pointer.substr(pos - seq_length, seq_length);
+				seed = seq.substr(five_length, seed_length);
+				cnt = 0;
+
+				for (int i = 0; i < seq.size(); i++)
 				{
-					cnt++;
+					if (seq[i] == 'N')
+					{
+						cnt++;
+					}
+					else
+					{
+						cnt = 0;
+					}
+					if (cnt >= 5)
+					{
+						break;
+					}
 				}
-				else
+
+				if (cnt < 5)
 				{
-					cnt = 0;
-				}
-				if (cnt >= 5)
-				{
-					break;
+					loc = size - pos + 1;
+					loc *= -1;
+
+					comp_seeds.push_back(compressSeq(seed));
+					l.push_back(loc);
+					c++;
 				}
 			}
-			
-			if (cnt < 5)
-			{
-				pos = size - pos + 1;
-				pos *= -1;
-
-				comp_seeds.push_back(compressSeq(seed));
-				l.push_back(pos);
-				c++;
-			}
-
+			pos = seq_pointer.find(curr_pam, pos + 1);
 		}
 	}
 	reverseComplement(seq_pointer);
-
-	//cout << "Chromosome " << chrom << " complete." << endl;
 }
 
 //find seeds - directionality
-void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> &comp_seeds, string &seq_pointer, regex &pam, int chrom, int &pam_length, int &seq_length, int &five_length, int &seed_length)
+void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> &comp_seeds, string &seq_pointer, pameval &PamEval, int chrom, int &pam_length, int &seq_length, int &five_length, int &seed_length)
 {
 	//check for 5 or more N's in seq before saving it
-	smatch m;
-	string seq, seed;
-	unsigned long pos = 0;
-	sregex_iterator begin, end;
+	string seq, seed, curr_pam;
+	long pos = 0;
 	int cnt = 0;
+	long loc = 0;
 	int size = seq_pointer.size();
-	begin = sregex_iterator(seq_pointer.begin(), seq_pointer.end(), pam);
-	for (sregex_iterator it = begin; it != end; it++)
+
+	for (int j = 0; j < PamEval.pam_list.size(); j++)
 	{
-		m = *it;
-		pos = m.position();
-		if (size - 10 > pos && pos > 30)
+		curr_pam = PamEval.pam_list[j];
+		pos = 0;
+		while (pos != string::npos)
 		{
-			string seq = seq_pointer.substr(pos, seq_length + pam_length);
-			if (seq.length() >= seq_length + pam_length)
+			if (pos > seq_length && pos < seq_pointer.size() - seq_length)
 			{
+				string seq = seq_pointer.substr(pos, seq_length + pam_length);
 				seed = seq.substr(pam_length + five_length, seed_length);
 				cnt = 0;
 				for (int i = 0; i < seq.size(); i++)
@@ -240,20 +237,21 @@ void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> 
 					c++;
 				}
 			}
+				
+			pos = seq_pointer.find(curr_pam, pos + 1);
 		}
 	}
 
 	reverseComplement(seq_pointer);
-	begin = sregex_iterator(seq_pointer.begin(), seq_pointer.end(), pam);
-	for (sregex_iterator it = begin; it != end; it++)
+	for (int j = 0; j < PamEval.pam_list.size(); j++)
 	{
-		m = *it;
-		pos = m.position();
-		if (size - 10 > pos && pos > 30)
+		curr_pam = PamEval.pam_list[j];
+		pos = 0;
+		while (pos != string::npos)
 		{
-			string seq = seq_pointer.substr(pos, seq_length + pam_length);
-			if (seq.length() >= seq_length + pam_length)
+			if (pos > seq_length && pos < seq_pointer.size() - seq_length)
 			{
+				string seq = seq_pointer.substr(pos, seq_length + pam_length);
 				seed = seq.substr(pam_length + five_length, seed_length);
 				cnt = 0;
 				for (int i = 0; i < seq.size(); i++)
@@ -274,19 +272,18 @@ void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> 
 
 				if (cnt < 5)
 				{
-					pos = size - pos;
-					pos *= -1;
+					loc = size - pos;
+					loc *= -1;
 					comp_seeds.push_back(compressSeq(seed));
-					l.push_back(pos);
+					l.push_back(loc);
 					c++;
 				}
 			}
+			pos = seq_pointer.find(curr_pam, pos + 1);
 		}
 	}
 	reverseComplement(seq_pointer);
-	//cout << "Chromosome " << chrom << " complete." << endl;
 }
-
 
 void CrisprGroup::process_targets(vector<int> &uniques, vector<int> &repeats, vector<unsigned long> &compressed_seeds, vector<long> &seed_locs)
 {
@@ -302,7 +299,7 @@ void CrisprGroup::process_targets(vector<int> &uniques, vector<int> &repeats, ve
 	});
 
 	//now we know that if compressed seeds are sorted, a repeated seed will be next to its repeats in the vector
-	//loop through compressed seeds, find out if that index leads to a unique or a repeated seed
+	//loop through compressed seeds, find out if that index leads to a unique or a repeated seed	
 	if (compressed_seeds[indices[0]] != compressed_seeds[indices[1]])
 	{
 		uniques.push_back(indices[0]);

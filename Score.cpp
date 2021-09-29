@@ -4,77 +4,275 @@ using namespace std;
 
 void Scoring::fillScoringAlgorithm(string &file, string &on_score_data)
 {
-	//Establish file stream
-	ifstream stream;
-	stream.open(file.c_str());
+	//open CASPERinfo file
+	ifstream fin(file);
+	string line;
 
-	//Get to the CRISPRSCAN data section of the file:
-	std::string myline = "myline";
-	while (getline(stream, myline))
+	//make sure file is open before reading
+	if (fin.is_open())
 	{
-		if (myline.find(on_score_data) != string::npos)
+		//loop through each line in CASPERinfo file
+		while (getline(fin, line))
 		{
-			break;
-		}
-	}
+			if (line.find(on_score_data) != string::npos)
+			{
+				//loop through each line in the CRISPRSCAN section
+				while (getline(fin, line))
+				{
+					if (line.find("--") != string::npos)
+					{
+						break;
+					}
+					else
+					{
+						//parse line of CRISPRSCAN data
+						vector<string> string_split = Msplit(line, '\t');
+						string chars = string_split[0];
+						int location = stoi(string_split[1]) - 1;
+						double score = stod(string_split[2]);
 
-	//Load Information
-	string nts;
-	while (getline(stream, nts))
-	{
-		if (nts.find("---") != string::npos)
-		{
-			break;
+						//check if primary key exists
+						if (CRISPRSCAN_data.find(location) != CRISPRSCAN_data.end())
+						{
+							CRISPRSCAN_data[location].insert(pair<std::string, double>(chars, score));
+						}
+						//if key not found, create new entry
+						else
+						{
+							map<std::string, double> temp;
+							temp.insert(pair<std::string, double>(chars, score));
+							CRISPRSCAN_data.insert(pair<int, map<std::string, double>>(location, temp));
+						}
+					}
+				}
+				break;
+			}
 		}
-		iden nid;
-		vector<string> mytoke = Msplit(nts, '\t');
-		nid.nt1 = mytoke[0][0];
-		nid.nt2 = mytoke[0][1];
-		nid.position = stoi(mytoke[1]);
-		nid.odds_score = stod(mytoke[2]);
-		Idens.push_back(nid);
+		//close CASPERinfo file
+		fin.close();
 	}
-	stream.close();
+	else
+	{
+		cerr << "Unable to open CASPERinfo file: " << file << endl;
+		exit(-1);
+	}
 };
 
-double Scoring::calcScore(string &s)
+float Scoring::scoreSequence(string gRNA, string full_sequence, pameval &PamEval)
 {
-	totalScore = 0;
-	returnScore = 0;
-	sequence = s;
-	scanScore();
-	//following line normalizes to best possible score
-	totalScore = 1 - ((1.29401 - totalScore) / 1.94947);
-	returnScore = (totalScore * 100) + 0.5; //0.5 for proper rounding
-	return returnScore;
+	float score = 0;
+	float sij_score = get_sij(gRNA, PamEval);
+	float sc_score = get_sc(full_sequence);
+	float sg_score = get_sg(gRNA);
+	float p_score = get_p(sij_score, sg_score);
+	
+	/*
+	if (full_sequence == "CAAATTTCATAACATCACCATGAGTTTGGTCCGAA")
+	{
+		cout << "sij: " << sij_score << endl;
+		cout << "sc: " << sc_score << endl;
+		cout << "sg: " << sg_score << endl;
+		cout << "p: " << p_score << endl;
+	}
+	*/
+
+	if (endo_private != "spCas9" && directionality_private == false)
+	{
+		p_score += ggg_penalty(gRNA);
+	}
+
+	if (p_score == 0)
+	{
+		score = sc_score;
+	}
+	else
+	{
+		score = sc_score / p_score;
+	}
+
+	score = score * 100;
+
+	if (score <= 100)
+	{
+		return score;
+	}
+	else
+	{
+		return 100;
+	}
 }
 
-void Scoring::scanScore()
+float Scoring::get_sc(string &sequence)
 {
-	for (int i = 0; i < Idens.size(); i++)
+	float score = 0;
+	string dnt = "";
+	string nt = "";
+	if (directionality_private)
 	{
-		char nucleo1 = Idens.at(i).nt1;  //may have to change this to pointers b/c of multiple creations of object
-		char nucleo2 = Idens.at(i).nt2;
-		int pos = Idens.at(i).position;
-		if (pos < sequence.size())
+		reverse(sequence.begin(), sequence.end());
+	}
+		
+	for (int i = 0; i < sequence.size(); i++)
+	{
+		nt = sequence[i];
+		if (i == sequence.size() - 1)
 		{
-			if (nucleo2 != 'x')
+			dnt = "";
+		}
+		dnt = sequence.substr(i, 2);
+		if (CRISPRSCAN_data.find(i) != CRISPRSCAN_data.end())
+		{
+			if (CRISPRSCAN_data[i].find(nt + "x") != CRISPRSCAN_data[i].end())
 			{
-				string dinucleo = string() + nucleo1 + nucleo2;
-				if (sequence.substr(pos - 1, 2) == dinucleo)
-				{
-					totalScore += Idens.at(i).odds_score;
-				}
+				score += CRISPRSCAN_data[i][nt + "x"];
 			}
-			else
+			if (CRISPRSCAN_data[i].find(dnt) != CRISPRSCAN_data[i].end())
 			{
-				if (sequence.at(pos - 1) == nucleo1)
-				{
-					totalScore += Idens.at(i).odds_score;
-				}
+				score += CRISPRSCAN_data[i][dnt];
 			}
 		}
 	}
+
+	if (directionality_private)
+	{
+		reverse(sequence.begin(), sequence.end());
+	}
+
+	score += 0.183930944;
+	if (score <= 0)
+	{
+		return 0;
+	}
+	
+	return score;
+	
+}
+
+float Scoring::get_sij(string &sequence, pameval &PamEval)
+{
+	//vars
+	string reverse_comp = reverseComplement(sequence);
+	string seq = sequence;
+	string temp;
+	string rev_temp;
+	int count = 0;
+	int rev_count = 0;
+	float pam_penalty = 0;
+	long pos = 0;
+	long pos_rev = 0;
+	int cnt = 0;
+
+	for (int i = 0; i < seq.size(); i++)
+	{
+		//get subtrings of pam length
+		temp = seq.substr(i, pam_length);
+		rev_temp = reverse_comp.substr(i, pam_length);
+		if (find(PamEval.pam_list.begin(), PamEval.pam_list.end(), temp) != PamEval.pam_list.end())
+		{
+			count += 1;
+		}
+		if (find(PamEval.pam_list.begin(), PamEval.pam_list.end(), rev_temp) != PamEval.pam_list.end())
+		{
+			rev_count += 1;
+		}
+	}
+
+	if (rev_count <= 6 && count <= 6)
+	{
+		pam_penalty = pam_scores[count][rev_count];
+	}
+
+	return pam_penalty;
+}
+
+float Scoring::get_sg(string &sequence)
+{
+	float score = 0;
+	string nt = "";
+	for (int i = 0; i < sequence.size(); i++)
+	{
+		nt = sequence[i];
+		if (nt == "G")
+		{
+			score += 1.0;
+		}
+		else if (nt == "C")
+		{
+			score += 0.5;
+		}
+		else if (nt == "A")
+		{
+			score -= 0.1;
+		}
+	}
+
+	return score / gRNA_len_private;
+}
+
+float Scoring::get_p(float &sij_score, float &sg_score)
+{
+	float p = 0;
+	if (sij_score > 1)
+	{
+		p = sij_score * sg_score;
+	}
+	else if (sij_score == 1)
+	{
+		p = 1 - (sg_score / 5);
+	}
+	else
+	{
+		p = 0;
+	}
+	return p;
+}
+
+float Scoring::ggg_penalty(string &sequence)
+{
+	int ggg_count = 0;
+	for (int i = 0; i < sequence.size() - 2; i++)
+	{
+		if (sequence.substr(i, 3) == "GGG")
+		{
+			ggg_count += 1;
+		}
+	}
+
+	if (ggg_count < 2)
+	{
+		return 1.0;
+	}
+	else if (ggg_count == 2)
+	{
+		return 0.85;
+	}
+	else if (ggg_count == 3)
+	{
+		return 0.7;
+	}
+	else
+	{
+		return 0.5;
+	}
+}
+
+string Scoring::reverseComplement(string &str)
+{
+	string rc = "";
+	for (long i = str.size() - 1; i >= 0; i--)
+	{
+		char n = str[i];
+		char reverse;
+		switch (n) {
+		case 'A': reverse = 'T'; break;
+		case 'T': reverse = 'A'; break;
+		case 'G': reverse = 'C'; break;
+		case 'C': reverse = 'G'; break;
+		default: reverse = 'N';
+		}
+		rc += reverse;
+	}
+	return rc;
 }
 
 vector<string> Scoring::Msplit(const string &text, char sep)

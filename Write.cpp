@@ -7,16 +7,18 @@ bool abs_cmp(long i1, long i2)
 	return (abs(i1) < abs(i2));
 }
 
-void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length, string &on_target_data)
+
+void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length, string &on_target_data, string &endo, bool &directionality, string &pam, pameval &PamEval)
 {
 	//variables
-	Scoring score(score_file, on_target_data);
-	string comp, seq, genome, kstat, misc;
+	Scoring score(score_file, on_target_data, directionality, endo, seq_length, pam);
+	string comp, seq, genome, kstat, misc, full_seq, curr_pam;
 	long pos = 0;
 	int i = 0;
 	vector<long> temp;
 	int j = 0;
 	int running_cnt = 0;
+	int leftover_padding = 35 - 6 - seq_length - pam_length;
 	ofstream outputfile;
 	outputfile.open(filename, ios_base::out | ios_base::binary);
 	boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
@@ -59,7 +61,7 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 			temp.push_back(seed_locs[uniques[j]]);
 			j++;
 		}
-		
+
 		//sort locations based on absolute value
 		sort(temp.begin(), temp.end(), abs_cmp);
 		
@@ -72,13 +74,19 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 			if (temp[i] > 0)
 			{
 				seq = sequences[curr_chrom].substr(temp[i] - seq_length, seq_length + pam_length);
-				out << temp[i] << ',' << seq.substr(0, seq_length) << ',' << seq.substr(seq_length, pam_length) << ',' << score.calcScore(seq) << endl;
+				full_seq = sequences[curr_chrom].substr(temp[i] - seq_length - leftover_padding, 35);
+				curr_pam = seq.substr(seq_length, pam_length);
+				seq = seq.substr(0, seq_length);
+				out << temp[i] << ',' << seq  << ',' << curr_pam << ',' << round(score.scoreSequence(seq, full_seq, PamEval)) << endl;
 			}
 			else
 			{
 				pos = comp.size() + temp[i] + 1;
 				seq = comp.substr(pos - seq_length, seq_length + pam_length);
-				out << temp[i] << ',' << seq.substr(0, seq_length) << ',' << seq.substr(seq_length, pam_length) << ',' << score.calcScore(seq) << endl;
+				full_seq = comp.substr(pos - seq_length - leftover_padding, 35);
+				curr_pam = seq.substr(seq_length, pam_length);
+				seq = seq.substr(0, seq_length);
+				out << temp[i] << ',' << seq << ',' << curr_pam << ',' << round(score.scoreSequence(seq, full_seq, PamEval)) << endl;
 			}
 		}
 
@@ -95,13 +103,15 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 	uniques.shrink_to_fit();
 }
 
-void Write::write_repeats(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length, string &on_target_data)
+
+void Write::write_repeats(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length, string &on_target_data, string &endo, bool &directionality, string &pam, pameval &PamEval)
 {
 	//variables
-	Scoring score(score_file, on_target_data);
+	Scoring score(score_file, on_target_data, directionality, endo, seq_length, pam);
 	sqlite3 *db;
 	char *zErrMsg = 0;
-	string sc, sql, seq, locs, seed, scores, fives, threes, pams, cs;
+	string sc, sql, seq, locs, seed, scores, fives, threes, pams, cs, full_seq;
+	int leftover_padding = 35 - 6 - seq_length - pam_length;
 	int rc;
 	int i = 0;
 	int running_cnt = 0;
@@ -147,18 +157,19 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 		{
 			
 			seq = sequences[curr_chrom].substr(seed_locs[repeats[i]] - seq_length, seq_length + pam_length);
+			full_seq = sequences[curr_chrom].substr(seed_locs[repeats[i]] - seq_length - leftover_padding, 35);
 		}
 		else
 		{
 			pos = comps[curr_chrom].size() + seed_locs[repeats[i]] + 1;
 			seq = comps[curr_chrom].substr(pos - seq_length, seq_length + pam_length);
-
+			full_seq = comps[curr_chrom].substr(pos - seq_length - leftover_padding, 35);
 		}
 		cs = to_string(curr_chrom + 1);
 		threes = seq.substr(five_length + seed_length, three_length);
 		fives = seq.substr(0, five_length);
 		pams = seq.substr(seq_length, pam_length);
-		scores = to_string(int(score.calcScore(seq)));
+		scores = to_string(int(round(score.scoreSequence(seq.substr(0, seq_length), full_seq, PamEval))));
 		cnt = 1;
 		seed = seq.substr(five_length, seed_length);
 
@@ -191,17 +202,19 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 			if (seed_locs[repeats[i + 1]] > 0)
 			{
 				seq = sequences[curr_chrom].substr(seed_locs[repeats[i + 1]] - seq_length, seq_length + pam_length);
+				full_seq = sequences[curr_chrom].substr(seed_locs[repeats[i + 1]] - seq_length - leftover_padding, 35);
 			}
 			else
 			{
 				pos = comps[curr_chrom].size() + seed_locs[repeats[i + 1]] + 1;
 				seq = comps[curr_chrom].substr(pos - seq_length, seq_length + pam_length);
+				full_seq = comps[curr_chrom].substr(pos - seq_length - leftover_padding, 35);
 			}
 			cs += "," + to_string(curr_chrom + 1);
 			threes += "," + seq.substr(five_length + seed_length, three_length);
 			fives += "," + seq.substr(0, five_length);
 			pams += "," + seq.substr(seq_length, pam_length);
-			scores += "," + to_string(int(score.calcScore(seq)));
+			scores += "," + to_string(int(round(score.scoreSequence(seq.substr(0, seq_length), full_seq, PamEval))));
 			i++;
 		}
 
@@ -217,16 +230,18 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 	sqlite3_close(db);
 }
 
-void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length, string &on_target_data)
+
+void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length, string &on_target_data, string &endo, bool &directionality, string &pam, pameval &PamEval)
 {
 	//variables
-	Scoring score(score_file, on_target_data);
-	string comp, seq, genome, kstat, misc;
+	Scoring score(score_file, on_target_data, directionality, endo, seq_length, pam);
+	string comp, seq, genome, kstat, misc, full_seq, curr_pam;
 	int i = 0;
 	vector<long> temp;
 	int j = 0;
 	long pos = 0;
 	int running_cnt = 0;
+	int leftover_padding = 35 - 6 - seq_length - pam_length;
 	ofstream outputfile;
 	outputfile.open(filename, ios_base::out | ios_base::binary);
 	boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
@@ -273,14 +288,19 @@ void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, v
 			if (temp[i] > 0)
 			{
 				seq = sequences[curr_chrom].substr(temp[i] - 1, seq_length + pam_length);
-
-				out << temp[i] + pam_length << ',' << seq.substr(pam_length, seq_length) << ',' << seq.substr(0, pam_length) << ',' << score.calcScore(seq) << endl;
+				full_seq = sequences[curr_chrom].substr(temp[i] - 1 - 6, 35);
+				curr_pam = seq.substr(0, pam_length);
+				seq = seq.substr(pam_length, seq_length);
+				out << temp[i] + pam_length << ',' << seq << ',' << curr_pam << ',' << round(score.scoreSequence(seq, full_seq, PamEval)) << endl;
 			}
 			else
 			{
 				pos = comp.size() + temp[i];
 				seq = comp.substr(pos, seq_length + pam_length);
-				out << temp[i] + pam_length << ',' << seq.substr(pam_length, seq_length) << ',' << seq.substr(0, pam_length) << ',' << score.calcScore(seq) << endl;
+				full_seq = comp.substr(pos - 6, 35);
+				curr_pam = seq.substr(0, pam_length);
+				seq = seq.substr(pam_length, seq_length);
+				out << temp[i] + pam_length << ',' << seq << ',' << curr_pam << ',' << round(score.scoreSequence(seq, full_seq, PamEval)) << endl;
 			}
 		}
 
@@ -297,13 +317,15 @@ void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, v
 	uniques.shrink_to_fit();
 }
 
-void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length, string &on_target_data)
+
+void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length, string &on_target_data, string &endo, bool &directionality, string &pam, pameval &PamEval)
 {
 	//variables
-	Scoring score(score_file, on_target_data);
+	Scoring score(score_file, on_target_data, directionality, endo, seq_length, pam);
 	sqlite3 *db;
 	char *zErrMsg = 0;
-	string sc, sql, seq, locs, seed, scores, fives, threes, pams, cs;
+	string sc, sql, seq, locs, seed, scores, fives, threes, pams, cs, full_seq;
+	int leftover_padding = 35 - 6 - seq_length - pam_length;
 	int rc;
 	int i = 0;
 	int running_cnt = 0;
@@ -348,18 +370,19 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 		if (seed_locs[repeats[i]] > 0)
 		{
 			seq = sequences[curr_chrom].substr(seed_locs[repeats[i]] - 1, seq_length + pam_length);
+			full_seq = sequences[curr_chrom].substr(seed_locs[repeats[i]] - 1 - 6, 35);
 		}
 		else
 		{
 			pos = comps[curr_chrom].size() + seed_locs[repeats[i]];
 			seq = comps[curr_chrom].substr(pos, seq_length + pam_length);
-
+			full_seq = comps[curr_chrom].substr(pos - 6, 35);
 		}
 		cs = to_string(curr_chrom + 1);
 		threes = seq.substr(pam_length + five_length + seed_length, three_length);
 		fives = seq.substr(pam_length, five_length);
 		pams = seq.substr(0, pam_length);
-		scores = to_string(int(score.calcScore(seq)));
+		scores = to_string(int(round(score.scoreSequence(seq.substr(pam_length, seq_length), full_seq, PamEval))));
 		cnt = 1;
 		while (true)
 		{
@@ -383,17 +406,19 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 			if (seed_locs[repeats[i + 1]] > 0)
 			{
 				seq = sequences[curr_chrom].substr(seed_locs[repeats[i + 1]] - 1, seq_length + pam_length);
+				full_seq = sequences[curr_chrom].substr(seed_locs[repeats[i + 1]] - 1 - 6, 35);
 			}
 			else
 			{
 				pos = comps[curr_chrom].size() + seed_locs[repeats[i + 1]];
 				seq = comps[curr_chrom].substr(pos, seq_length + pam_length);
+				full_seq = comps[curr_chrom].substr(pos - 6, 35);
 			}
 			cs += "," + to_string(curr_chrom + 1);
 			threes += "," + seq.substr(pam_length + five_length + seed_length, three_length);
 			fives += "," + seq.substr(pam_length, five_length);
 			pams += "," + seq.substr(0, pam_length);
-			scores += "," + to_string(int(score.calcScore(seq)));
+			scores += "," + to_string(int(round(score.scoreSequence(seq.substr(pam_length, seq_length), full_seq, PamEval))));
 			i++;
 		}
 
@@ -401,7 +426,6 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 		seed = "'" + seq.substr(pam_length + five_length, seed_length) + "'";
 		sql += seed + ",'" + cs + "','" + locs + "','" + threes + "','" + fives + "','" + pams + "','" + scores + "'," + to_string(cnt);
 		sql += ");";
-		
 		rc = sqlite3_exec(db, sql.c_str(), NULL, 0, 0);
 	}
 
@@ -410,14 +434,6 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 	sqlite3_close(db);
 }
 
-unsigned long Write::compressSeq(string &s) {
-	unsigned long compseq = 0;
-	for (int i = 0; i < s.size(); i++)
-	{
-		compseq += convertCharBase4(s[i])*pow(4, i); //multiplying by power-4 converts to base10
-	}
-	return compseq; //base10 version of sequence string
-}
 
 int Write::convertCharBase4(char &c) {
 	switch (c) {

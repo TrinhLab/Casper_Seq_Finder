@@ -22,11 +22,12 @@ int main(int argc, char* argv[])
 	//vector<string> argv = { "Executable", "asCas12", "TTTV", "TRUE","TRUE","TRUE","0","16","8","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
 	//vector<string> argv = { "Executable", "saCas9", "NNGRRT", "TRUE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/sce.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
 	
-	//vector<string> argv = { "Executable", "spCas9", "NGG", "TRUE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/CASPER_alg_tool/staphylococcus_aureus.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
+	//vector<string> argv = { "Executable", "spCas9", "NGG", "TRUE","FALSE","TRUE","4","16","0","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/acinetobacter_baumanii.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
 	//vector<string> argv = { "Executable", "spCas9", "NGG", "TRUE","FALSE","TRUE","4","16","0","gallus","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/gallus_gallus.fna", "gallus", "notes_go_here", "DATA:CRISPRSCAN" };
 	//vector<string> argv = { "Executable", "saCas9", "NNGRRT", "TRUE","FALSE","TRUE","4","16","0","gallus","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/gallus_gallus", "gallus", "notes_go_here", "DATA:CRISPRSCAN" };
+	//vector<string> argv = { "Executable", "asCas12", "TTTV", "TRUE","TRUE","TRUE","0","20","4","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/acinetobacter_baumanii.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
 
-	//vector<string> argv = { "Executable", "asCas12", "TTTV", "TRUE","TRUE","TRUE","0","20","4","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/CASPER_alg_tool/staphylococcus_aureus.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
+	//vector<string> argv = { "Executable", "asCas12", "TTTV", "TRUE","TRUE","TRUE","0","20","4","sce","C:/Users/Tfry/Desktop/","C:/Users/Tfry/Desktop/CASPERapp/CASPERinfo","C:/Users/Tfry/Desktop/Recommended_CSPR_Files/FNA/acinetobacter_baumanii.fna", "sce", "notes_go_here", "DATA:CRISPRSCAN" };
 
 	//variables
 	CrisprGroup genome;

@@ -109,6 +109,7 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 	int cnt = 0;
 	int size = seq_pointer.size();
 	string curr_pam = "";
+	int leftover_padding = 35 - 6 - seq_length - PamEval.pam_list[0].size();
 	//loop through each valid pam
 	for (int j = 0; j < PamEval.pam_list.size(); j++)
 	{
@@ -116,7 +117,7 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 		pos = 0;
 		while (pos != string::npos)
 		{
-			if (pos > seq_length && pos < seq_pointer.size() - seq_length)
+			if (pos >= seq_length + leftover_padding && pos < seq_pointer.size() - 35)
 			{
 				seq = seq_pointer.substr(pos - seq_length, seq_length);
 				seed = seq.substr(five_length, seed_length);
@@ -156,7 +157,7 @@ void CrisprGroup::find_seeds(vector<long> &l, int &c, vector<unsigned long> &com
 		curr_pam = PamEval.pam_list[j];
 		while (pos != string::npos)
 		{
-			if (pos > seq_length && pos < seq_pointer.size() - seq_length)
+			if (pos >= seq_length + leftover_padding && pos < seq_pointer.size() - 35)
 			{
 				seq = seq_pointer.substr(pos - seq_length, seq_length);
 				seed = seq.substr(five_length, seed_length);
@@ -210,7 +211,7 @@ void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> 
 		pos = 0;
 		while (pos != string::npos)
 		{
-			if (pos > seq_length && pos < seq_pointer.size() - seq_length)
+			if (pos >= 7 && pos < seq_pointer.size() - 35)
 			{
 				string seq = seq_pointer.substr(pos, seq_length + pam_length);
 				seed = seq.substr(pam_length + five_length, seed_length);
@@ -249,7 +250,7 @@ void CrisprGroup::find_seeds_dir(vector<long> &l, int &c, vector<unsigned long> 
 		pos = 0;
 		while (pos != string::npos)
 		{
-			if (pos > seq_length && pos < seq_pointer.size() - seq_length)
+			if (pos >= 7 && pos < seq_pointer.size() - 35)
 			{
 				string seq = seq_pointer.substr(pos, seq_length + pam_length);
 				seed = seq.substr(pam_length + five_length, seed_length);

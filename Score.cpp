@@ -1,7 +1,6 @@
 #include "Score.h"
 
 using namespace std;
-
 void Scoring::fillScoringAlgorithm(string &file, string &on_score_data)
 {
 	//open CASPERinfo file
@@ -60,21 +59,11 @@ void Scoring::fillScoringAlgorithm(string &file, string &on_score_data)
 
 float Scoring::scoreSequence(string gRNA, string full_sequence, pameval &PamEval)
 {
-	float score = 0;
+	float score = 0.0;
 	float sij_score = get_sij(gRNA, PamEval);
 	float sc_score = get_sc(full_sequence);
 	float sg_score = get_sg(gRNA);
 	float p_score = get_p(sij_score, sg_score);
-	
-	/*
-	if (full_sequence == "CAAATTTCATAACATCACCATGAGTTTGGTCCGAA")
-	{
-		cout << "sij: " << sij_score << endl;
-		cout << "sc: " << sc_score << endl;
-		cout << "sg: " << sg_score << endl;
-		cout << "p: " << p_score << endl;
-	}
-	*/
 
 	if (endo_private != "spCas9" && directionality_private == false)
 	{
@@ -91,15 +80,20 @@ float Scoring::scoreSequence(string gRNA, string full_sequence, pameval &PamEval
 	}
 
 	score = score * 100;
-
-	if (score <= 100)
+	
+	if (score <= 100 && score >= 0)
 	{
 		return score;
+	}
+	else if (score < 0)
+	{
+		return 0;
 	}
 	else
 	{
 		return 100;
 	}
+	
 }
 
 float Scoring::get_sc(string &sequence)
@@ -119,7 +113,10 @@ float Scoring::get_sc(string &sequence)
 		{
 			dnt = "";
 		}
-		dnt = sequence.substr(i, 2);
+		else
+		{
+			dnt = sequence.substr(i, 2);
+		}
 		if (CRISPRSCAN_data.find(i) != CRISPRSCAN_data.end())
 		{
 			if (CRISPRSCAN_data[i].find(nt + "x") != CRISPRSCAN_data[i].end())
@@ -162,7 +159,7 @@ float Scoring::get_sij(string &sequence, pameval &PamEval)
 	long pos_rev = 0;
 	int cnt = 0;
 
-	for (int i = 0; i < seq.size(); i++)
+	for (int i = 0; i <= seq.size() - pam_length; i++)
 	{
 		//get subtrings of pam length
 		temp = seq.substr(i, pam_length);
@@ -187,26 +184,26 @@ float Scoring::get_sij(string &sequence, pameval &PamEval)
 
 float Scoring::get_sg(string &sequence)
 {
-	float score = 0;
+	int score = 0;
 	string nt = "";
 	for (int i = 0; i < sequence.size(); i++)
 	{
 		nt = sequence[i];
 		if (nt == "G")
 		{
-			score += 1.0;
+			score += 10;
 		}
 		else if (nt == "C")
 		{
-			score += 0.5;
+			score += 5;
 		}
 		else if (nt == "A")
 		{
-			score -= 0.1;
+			score -= 1;
 		}
 	}
 
-	return score / gRNA_len_private;
+	return float(score/10) / float(gRNA_len_private);
 }
 
 float Scoring::get_p(float &sij_score, float &sg_score)

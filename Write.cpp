@@ -1,4 +1,5 @@
 #include "Write.h"
+#include <sstream>
 using namespace std;
 
 //abs comparison used for sorting vector of longs
@@ -8,24 +9,19 @@ bool abs_cmp(long i1, long i2)
 }
 
 
-void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length, string &on_target_data, string &endo, bool &directionality, string &pam, pameval &PamEval)
+void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &on_target_scores, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length)
 {
 	//variables
-	Scoring score(score_file, on_target_data, directionality, endo, seq_length, pam);
 	string comp, seq, genome, kstat, misc, full_seq, curr_pam;
 	long pos = 0;
 	int i = 0;
-	vector<long> temp;
 	int j = 0;
 	int running_cnt = 0;
 	int leftover_padding = 35 - 6 - seq_length - pam_length;
-	ofstream outputfile;
-	outputfile.open(filename, ios_base::out | ios_base::binary);
-	boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
-	outbuf.push(boost::iostreams::gzip_compressor());
-	outbuf.push(outputfile);
-	//Convert streambuf to ostream
-	ostream out(&outbuf);
+	//ofstream outputfile(filename);
+
+	FILE* outputfile;
+	outputfile = fopen(filename.c_str(),"w");
 
 	//output first details - org name, kstats, misc
 	genome = "GENOME: " + org_name;
@@ -36,18 +32,20 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 	}
 	misc = "MISCELLANEOUS: " + notes;
 
-	out << genome << endl;
-	out << kstat << endl;
-	out << misc << endl;
-	
+	fprintf(outputfile, "%s\n", genome.c_str());
+	fprintf(outputfile, "%s\n", kstat.c_str());
+	fprintf(outputfile, "%s\n", misc.c_str());
+
+	string ss_temp;
+	stringstream ss(ss_temp);
+	vector<int> temp_indexes;
 	//loop through all chromosomes, get locations of pams, write out pams
 	for (int curr_chrom = 0; curr_chrom < sequences.size(); curr_chrom++)
 	{
-		out << chroms[curr_chrom] << endl;
+		fprintf(outputfile, "%s\n", chroms[curr_chrom].c_str());
 		
 		//get locations pertaining to pams found in the current chromosome
 		running_cnt += seed_cnts[curr_chrom];
-
 		while (true)
 		{
 			if (j >= uniques.size())
@@ -58,45 +56,42 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 			{
 				break;
 			}
-			temp.push_back(seed_locs[uniques[j]]);
+			temp_indexes.push_back(uniques[j]);
 			j++;
 		}
-
 		//sort locations based on absolute value
-		sort(temp.begin(), temp.end(), abs_cmp);
-		
+		sort(temp_indexes.begin(), temp_indexes.end(),
+			[&seed_locs](int A, int B) -> bool {
+			return abs(seed_locs[A]) < abs(seed_locs[B]);
+		});
+
 		//store reverse complement of current chromosome
 		comp = reverseComplement(sequences[curr_chrom]);
 
 		//loop through locations in current chromosomes, extract sequence, calculate score, write out
-		for (int i = 0; i < temp.size(); i++)
+		for (int i = 0; i < temp_indexes.size(); i++)
 		{
-			if (temp[i] > 0)
+			if (seed_locs[temp_indexes[i]] > 0)
 			{
-				seq = sequences[curr_chrom].substr(temp[i] - seq_length, seq_length + pam_length);
-				full_seq = sequences[curr_chrom].substr(temp[i] - seq_length - leftover_padding, 35);
+				seq = sequences[curr_chrom].substr(seed_locs[temp_indexes[i]] - seq_length, seq_length + pam_length);
 				curr_pam = seq.substr(seq_length, pam_length);
 				seq = seq.substr(0, seq_length);
-				out << temp[i] << ',' << seq  << ',' << curr_pam << ',' << round(score.scoreSequence(seq, full_seq, PamEval)) << endl;
+				fprintf(outputfile, "%ld,%s,%s,%i\n", seed_locs[temp_indexes[i]], seq.c_str(), curr_pam.c_str(), on_target_scores[temp_indexes[i]]);
 			}
 			else
 			{
-				pos = comp.size() + temp[i] + 1;
+				pos = comp.size() + seed_locs[temp_indexes[i]] + 1;
 				seq = comp.substr(pos - seq_length, seq_length + pam_length);
-				full_seq = comp.substr(pos - seq_length - leftover_padding, 35);
 				curr_pam = seq.substr(seq_length, pam_length);
 				seq = seq.substr(0, seq_length);
-				out << temp[i] << ',' << seq << ',' << curr_pam << ',' << round(score.scoreSequence(seq, full_seq, PamEval)) << endl;
+				fprintf(outputfile, "%ld,%s,%s,%i\n", seed_locs[temp_indexes[i]], seq.c_str(), curr_pam.c_str(), on_target_scores[temp_indexes[i]]);
 			}
 		}
-
 		//clear temporary locations vector
-		temp.clear();
-		temp.shrink_to_fit();
+		temp_indexes.clear();
 	}
-
 	//close file
-	boost::iostreams::close(outbuf);
+	fclose(outputfile);
 
 	//cleanup - clear out uniques vector
 	uniques.clear();
@@ -104,10 +99,9 @@ void Write::write_uniques(vector<int> &uniques, vector<string> &sequences, vecto
 }
 
 
-void Write::write_repeats(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length, string &on_target_data, string &endo, bool &directionality, string &pam, pameval &PamEval)
+void Write::write_repeats(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<int> &on_target_scores, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length)
 {
 	//variables
-	Scoring score(score_file, on_target_data, directionality, endo, seq_length, pam);
 	sqlite3 *db;
 	char *zErrMsg = 0;
 	string sc, sql, seq, locs, seed, scores, fives, threes, pams, cs, full_seq;
@@ -169,7 +163,7 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 		threes = seq.substr(five_length + seed_length, three_length);
 		fives = seq.substr(0, five_length);
 		pams = seq.substr(seq_length, pam_length);
-		scores = to_string(int(round(score.scoreSequence(seq.substr(0, seq_length), full_seq, PamEval))));
+		scores = to_string(on_target_scores[repeats[i]]);
 		cnt = 1;
 		seed = seq.substr(five_length, seed_length);
 
@@ -214,7 +208,7 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 			threes += "," + seq.substr(five_length + seed_length, three_length);
 			fives += "," + seq.substr(0, five_length);
 			pams += "," + seq.substr(seq_length, pam_length);
-			scores += "," + to_string(int(round(score.scoreSequence(seq.substr(0, seq_length), full_seq, PamEval))));
+			scores += "," + to_string(on_target_scores[repeats[i + 1]]);
 			i++;
 		}
 
@@ -231,24 +225,19 @@ void Write::write_repeats(string& filename, vector<int> &repeats, vector<string>
 }
 
 
-void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length, string &on_target_data, string &endo, bool &directionality, string &pam, pameval &PamEval)
+void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, vector<long> &seed_locs, vector<int> &on_target_scores, vector<int> &seed_cnts, vector<unsigned long> &kstats, string &org_name, string &filename, string &score_file, vector<string> &chroms, string &notes, int &pam_length, int &seq_length)
 {
 	//variables
-	Scoring score(score_file, on_target_data, directionality, endo, seq_length, pam);
 	string comp, seq, genome, kstat, misc, full_seq, curr_pam;
-	int i = 0;
-	vector<long> temp;
-	int j = 0;
 	long pos = 0;
+	int i = 0;
+	int j = 0;
 	int running_cnt = 0;
 	int leftover_padding = 35 - 6 - seq_length - pam_length;
-	ofstream outputfile;
-	outputfile.open(filename, ios_base::out | ios_base::binary);
-	boost::iostreams::filtering_streambuf<boost::iostreams::output> outbuf;
-	outbuf.push(boost::iostreams::gzip_compressor());
-	outbuf.push(outputfile);
-	//Convert streambuf to ostream
-	ostream out(&outbuf);
+	//ofstream outputfile(filename);
+
+	FILE* outputfile;
+	outputfile = fopen(filename.c_str(), "w");
 
 	//output first details - org name, kstats, misc
 	genome = "GENOME: " + org_name;
@@ -259,58 +248,66 @@ void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, v
 	}
 	misc = "MISCELLANEOUS: " + notes;
 
-	out << genome << endl;
-	out << kstat << endl;
-	out << misc << endl;
+	fprintf(outputfile, "%s\n", genome.c_str());
+	fprintf(outputfile, "%s\n", kstat.c_str());
+	fprintf(outputfile, "%s\n", misc.c_str());
 
+	string ss_temp;
+	stringstream ss(ss_temp);
+	vector<int> temp_indexes;
 	//loop through all chromosomes, get locations of pams, write out pams
 	for (int curr_chrom = 0; curr_chrom < sequences.size(); curr_chrom++)
 	{
-		out << chroms[curr_chrom] << endl;
+		fprintf(outputfile, "%s\n", chroms[curr_chrom].c_str());
 
 		//get locations pertaining to pams found in the current chromosome
 		running_cnt += seed_cnts[curr_chrom];
-		while (uniques[j] < running_cnt && j < uniques.size())
+		while (true)
 		{
-			temp.push_back(seed_locs[uniques[j]]);
+			if (j >= uniques.size())
+			{
+				break;
+			}
+			if (uniques[j] >= running_cnt)
+			{
+				break;
+			}
+			temp_indexes.push_back(uniques[j]);
 			j++;
 		}
-
 		//sort locations based on absolute value
-		sort(temp.begin(), temp.end(), abs_cmp);
+		sort(temp_indexes.begin(), temp_indexes.end(),
+			[&seed_locs](int A, int B) -> bool {
+			return abs(seed_locs[A]) < abs(seed_locs[B]);
+		});
 
 		//store reverse complement of current chromosome
 		comp = reverseComplement(sequences[curr_chrom]);
 
 		//loop through locations in current chromosomes, extract sequence, calculate score, write out
-		for (int i = 0; i < temp.size(); i++)
+		for (int i = 0; i < temp_indexes.size(); i++)
 		{
-			if (temp[i] > 0)
+			if (seed_locs[temp_indexes[i]] > 0)
 			{
-				seq = sequences[curr_chrom].substr(temp[i] - 1, seq_length + pam_length);
-				full_seq = sequences[curr_chrom].substr(temp[i] - 1 - 6, 35);
+				seq = sequences[curr_chrom].substr(seed_locs[temp_indexes[i]] - 1, seq_length + pam_length);
 				curr_pam = seq.substr(0, pam_length);
 				seq = seq.substr(pam_length, seq_length);
-				out << temp[i] + pam_length << ',' << seq << ',' << curr_pam << ',' << round(score.scoreSequence(seq, full_seq, PamEval)) << endl;
+				fprintf(outputfile, "%ld,%s,%s,%i\n", seed_locs[temp_indexes[i]] + pam_length, seq.c_str(), curr_pam.c_str(), on_target_scores[temp_indexes[i]]);
 			}
 			else
 			{
-				pos = comp.size() + temp[i];
+				pos = comp.size() + seed_locs[temp_indexes[i]];
 				seq = comp.substr(pos, seq_length + pam_length);
-				full_seq = comp.substr(pos - 6, 35);
 				curr_pam = seq.substr(0, pam_length);
 				seq = seq.substr(pam_length, seq_length);
-				out << temp[i] + pam_length << ',' << seq << ',' << curr_pam << ',' << round(score.scoreSequence(seq, full_seq, PamEval)) << endl;
+				fprintf(outputfile, "%ld,%s,%s,%i\n", seed_locs[temp_indexes[i]] + pam_length, seq.c_str(), curr_pam.c_str(), on_target_scores[temp_indexes[i]]);
 			}
 		}
-
 		//clear temporary locations vector
-		temp.clear();
-		temp.shrink_to_fit();
+		temp_indexes.clear();
 	}
-
 	//close file
-	boost::iostreams::close(outbuf);
+	fclose(outputfile);
 
 	//cleanup - clear out uniques vector
 	uniques.clear();
@@ -318,10 +315,9 @@ void Write::write_uniques_dir(vector<int> &uniques, vector<string> &sequences, v
 }
 
 
-void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length, string &on_target_data, string &endo, bool &directionality, string &pam, pameval &PamEval)
+void Write::write_repeats_dir(string &filename, vector<int> &repeats, vector<string> &sequences, vector<long> &seed_locs, vector<unsigned long> &compressed_seeds, vector<int> &on_target_scores, vector<int> &seed_cnts, string &score_file, int &five_length, int &three_length, int &seed_length, int &pam_length, int &seq_length)
 {
 	//variables
-	Scoring score(score_file, on_target_data, directionality, endo, seq_length, pam);
 	sqlite3 *db;
 	char *zErrMsg = 0;
 	string sc, sql, seq, locs, seed, scores, fives, threes, pams, cs, full_seq;
@@ -382,7 +378,7 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 		threes = seq.substr(pam_length + five_length + seed_length, three_length);
 		fives = seq.substr(pam_length, five_length);
 		pams = seq.substr(0, pam_length);
-		scores = to_string(int(round(score.scoreSequence(seq.substr(pam_length, seq_length), full_seq, PamEval))));
+		scores = to_string(on_target_scores[repeats[i]]);
 		cnt = 1;
 		while (true)
 		{
@@ -418,7 +414,7 @@ void Write::write_repeats_dir(string& filename, vector<int> &repeats, vector<str
 			threes += "," + seq.substr(pam_length + five_length + seed_length, three_length);
 			fives += "," + seq.substr(pam_length, five_length);
 			pams += "," + seq.substr(0, pam_length);
-			scores += "," + to_string(int(round(score.scoreSequence(seq.substr(pam_length, seq_length), full_seq, PamEval))));
+			scores += "," + to_string(on_target_scores[repeats[i + 1]]);
 			i++;
 		}
 
